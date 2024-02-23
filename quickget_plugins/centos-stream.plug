@@ -1,0 +1,96 @@
+#!/usr/bin/bash
+
+#   This template identifies the functions required to supported by each OS
+
+# Use this function to override the standard function in quickget
+# if you distribution requires something special. Windows and Mac are examples..
+#function create_vm() {
+#
+#}
+
+# This function returns an associative array with keys "url", "iso", and "hash"
+# Change this function for your distro
+function get_distro_info() {
+    declare -A distro_info
+    case ${RELEASE} in
+      8)
+        distro_info['iso']="CentOS-Stream-${RELEASE}-x86_64-latest-${EDITION}.iso"
+        distro_info['url']="https://mirrors.ocf.berkeley.edu/centos/8-stream/isos/x86_64"
+        distro_info['hash']=$(wget -q -O- ${distro_info['url']}/CHECKSUM | grep "SHA256 (${distro_info['iso']}" | cut -d' ' -f4)
+        ;;
+      9)
+        distro_info['iso']="CentOS-Stream-${RELEASE}-latest-x86_64-${EDITION}.iso"
+        distro_info['url']="https://mirrors.ocf.berkeley.edu/centos-stream/9-stream/BaseOS/x86_64/iso"
+        distro_info['hash']=$(wget -q -O- ${distro_info['url']}/${distro_info['iso']}.SHA256SUM | grep "SHA256 (${distro_info['iso']}" | cut -d' ' -f4)
+        ;;
+    esac
+
+    for key in "${!distro_info[@]}"; do
+        echo "${key}" "${distro_info[${key}]}"
+    done
+}
+
+# Use this function to override the standard function in quickget
+# if you distribution requires something special. Windows and Mac are examples..
+#function get_file() {
+#
+#}
+
+# This function returns supported OS releases for the OS
+# Change this function for your distro
+function releases() {
+    echo 8 9
+}
+
+# This function returns an associative array with releases as the key
+# and a "!" separated string of valid editions for the specific release.
+# While quite often editions are the same for all releases it is not always
+# the case.
+# Editions have different meanings for different OS's
+# Change this function for your distro
+function editions() {
+    declare -A editions
+    local release
+
+    for release in $(releases); do
+        editions[${release}]="boot!dvd1"
+    done
+
+    for key in "${!editions[@]}"; do
+        echo "${key}" "${editions[${key}]}"
+    done
+}
+
+# Change this function for your distro
+# Returning 0 means editions are required and 1 not required
+function editions_required() {
+    return 0
+}
+
+# This function returns an expanded OS name for pretty printing
+# Change this function for your distro
+function pretty_name() {
+    echo "CentOS Stream"
+}
+
+# This function returns the OS's home page URL
+# Change this function for your distro
+function homepage() {
+    echo "https://www.centos.org/centos-stream/"
+}
+
+# This function creates the vm_config file and can be used to
+# replace the default one in the quickget
+# Change this function for your distro
+function make_vm_config() {
+    default_vm_config
+
+    # Override any default settings
+    # i.e sed -i 's/^disk_size=.*/disk_size=\"80G\"/' "${VM_PATH}".conf
+
+    # Add any additional lines
+    # {
+    #     printf "fixed_iso=\"%s\"\n"   ${fixed_iso}
+    #
+    # } >> "${VM_PATH}.conf"
+}

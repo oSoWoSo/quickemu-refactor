@@ -1,0 +1,139 @@
+#!/usr/bin/bash
+
+#   This template identifies the functions required to supported by each OS
+
+# Use this function to override the standard function in quickget
+# if you distribution requires something special. Windows and Mac are examples..
+#function create_vm() {
+#
+#}
+
+# This function returns an associative array with keys "url", "iso", and "hash"
+# Change this function for your distro
+function get_distro_info() {
+    declare -A distro_info
+    local json_all=""
+    local json_rel=""
+
+    json_all=$(wget -q -O- "https://www.fosshub.com/Android-x86-old.html" | grep "var settings =" | cut -d'=' -f2-)
+    json_rel=$(echo "${json_all}" | jq --arg ver "${OS}-${EDITION}-${RELEASE}" 'first(.pool.f[] | select((.n | startswith($ver)) and (.n | endswith(".iso"))))')
+    distro_info['url']="https://mirrors.gigenet.com/OSDN/android-x86"
+    distro_info['iso']=$(echo "${json_rel}" | jq -r .n)
+    distro_info['hash']=$(echo "${json_rel}" | jq -r .hash.sha256)
+    # Traverse the directories to find the .iso location
+    for DIR in $(wget -4 -q -O- "${distro_info['url']}" | grep -o -E '[0-9]{5}' | sort -ur); do
+        if wget -4 -q -O- "${distro_info['url']}/${DIR}" | grep "${distro_info['iso']}" &>/dev/null; then
+            distro_info['url']="${distro_info['url']}/${DIR}"
+            break
+        fi
+    done
+
+    for key in "${!distro_info[@]}"; do
+        echo "${key}" "${distro_info[${key}]}"
+    done
+}
+
+#function get_file() {
+#    #    This function can be used to over rid the standard function in quickget
+#    #    if you distribution requires something special. Windows and Mac are examples..
+#}
+
+# This function returns supported OS releases for the OS
+# Change this function for your distro
+function releases() {
+    echo latest
+}
+
+# This function returns an associative array with releases as the key
+# and a "!" separated string of valid editions for the specific release.
+# While quite often editions are the same for all releases it is not always
+# the case.
+# Editions have different meanings for different OS's
+# Change this function for your distro
+function editions() {
+    declare -A editions
+    local release
+
+    for release in $(releases); do
+        editions[${release}]="boot!minimal!dvd"
+    done
+
+    for key in "${!editions[@]}"; do
+        echo "${key}" "${editions[${key}]}"
+    done
+}
+
+# Change this function for your distro
+# Returning 0 means editions are required and 1 not required
+function editions_required() {
+    return 0
+}
+
+# This function returns an expanded OS name for pretty printing
+# Change this function for your distro
+function pretty_name() {
+    echo "Alma Linux"
+}
+
+# Use this function to override the standard function in quickget
+# if you distribution requires something special. Windows and Mac are examples..
+#function get_file() {
+#
+#}
+
+# This function returns supported OS releases for the OS
+# Change this function for your distro
+function releases() {
+    echo 7.1 8.1 9.0
+}
+
+# This function returns an associative array with releases as the key
+# and a "!" separated string of valid editions for the specific release.
+# While quite often editions are the same for all releases it is not always
+# the case.
+# Editions have different meanings for different OS's
+# Change this function for your distro
+function editions() {
+    declare -A editions
+    local release
+
+    for release in $(releases); do
+        editions[${release}]="x86!x86_64"
+    done
+
+    echo "${editions[@]@k}"
+}
+
+# Change this function for your distro
+# Returning 0 means editions are required and 1 not required
+function editions_required() {
+    return 0
+}
+
+# This function returns an expanded OS name for pretty printing
+# Change this function for your distro
+function pretty_name() {
+    echo "Android Linux"
+}
+
+# This function returns the OS's home page URL
+# Change this function for your distro
+function homepage() {
+    echo "https://www.android-x86.org/"
+}
+
+# This function creates the vm_config file and can be used to
+# replace the default one in the quickget
+# Change this function for your distro
+function make_vm_config() {
+    default_vm_config
+
+    # Override any default settings
+    # i.e sed -i 's/^disk_size=.*/disk_size=\"80G\"/' "${VM_PATH}".conf
+
+    # Add any additional lines
+    # {
+    #     printf "fixed_iso=\"%s\"\n"   ${fixed_iso}
+    #
+    # } >> "${VM_PATH}.conf"
+}
